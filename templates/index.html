@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ledger &amp; Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#10233d; --navy-2:#16324f; --ivory:#f6f3ec; --paper:#fffdf8;
+    --brass:#a9822f; --brass-light:#c7a24f; --ink:#1d2430; --ink-soft:#5b6472;
+    --line:#d8d2c2; --red:#a3372f; --green:#356a4c;
+    font-family:'Inter',sans-serif; box-sizing:border-box;
+  }
+  *,*::before,*::after{box-sizing:inherit}
+  html,body{height:100%;margin:0}
+  body{background:var(--ivory);color:var(--ink);-webkit-font-smoothing:antialiased}
+  header.masthead{background:linear-gradient(180deg,var(--navy),var(--navy-2));color:var(--ivory)}
+  .masthead-inner{max-width:920px;margin:0 auto;padding:28px 24px 22px;display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;border-bottom:1px solid rgba(246,243,236,0.18)}
+  .brand{font-family:'Fraunces',serif;font-size:1.7rem;font-weight:500}
+  .brand small{display:block;font-family:'Inter',sans-serif;font-size:0.68rem;letter-spacing:0.14em;color:var(--brass-light);margin-top:3px}
+  nav.tabs{display:none}
+  main{max-width:920px;margin:0 auto;padding:34px 24px 80px}
+  .view{display:none} .view.active{display:block}
+  h1.page-title{font-family:'Fraunces',serif;font-weight:500;font-size:1.5rem;margin:0 0 4px}
+  p.page-sub{color:var(--ink-soft);margin:0 0 28px;font-size:0.94rem;max-width:60ch}
+  .panel{background:var(--paper);border:1px solid var(--line);padding:22px;margin-bottom:24px}
+  .panel h2{font-family:'Fraunces',serif;font-weight:500;font-size:1.08rem;margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  .field-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px}
+  .field label{font-size:0.74rem;color:var(--ink-soft);font-weight:600}
+  .field input{font-family:'Inter',sans-serif;font-size:0.95rem;padding:9px 10px;border:1px solid var(--line);background:var(--ivory);color:var(--ink)}
+  .field input:focus{outline:2px solid var(--brass);outline-offset:1px}
+  button.action{font-family:'Inter',sans-serif;font-size:0.86rem;font-weight:700;background:var(--navy);color:var(--ivory);border:none;padding:10px 20px;cursor:pointer}
+  button.action:hover{background:var(--navy-2)}
+  button.action.secondary{background:transparent;color:var(--navy);border:1px solid var(--navy)}
+  button.action.danger{background:transparent;color:var(--red);border:1px solid var(--red);font-size:0.76rem;padding:6px 10px}
+  button.action:disabled{opacity:0.5;cursor:default}
+  .msg{font-size:0.86rem;padding:9px 12px;margin-top:12px;border-left:3px solid var(--brass);background:rgba(169,130,47,0.08);display:none}
+  .msg.show{display:block}
+  .msg.error{border-color:var(--red);background:rgba(163,55,47,0.08);color:var(--red)}
+  .msg.success{border-color:var(--green);background:rgba(53,106,76,0.08);color:var(--green)}
+  table.ledger{width:100%;border-collapse:collapse;font-size:0.9rem}
+  table.ledger th{text-align:left;font-size:0.72rem;color:var(--ink-soft);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--ink)}
+  table.ledger td{padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+  table.ledger tr:last-child td{border-bottom:none}
+  .acct-id{font-variant-numeric:tabular-nums;letter-spacing:0.02em;color:var(--brass);font-weight:600}
+  .amt{font-variant-numeric:tabular-nums}
+  .amt.neg{color:var(--red)} .amt.pos{color:var(--green)}
+  .balance-edit{display:flex;gap:6px}
+  .balance-edit input{width:100px;padding:6px 8px;border:1px solid var(--line);background:var(--ivory);color:var(--ink)}
+  .table-scroll{overflow-x:auto}
+  .empty-row td{color:var(--ink-soft);text-align:center;padding:22px 10px}
+  .acct-card{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;padding:18px 0 20px;border-bottom:1px solid var(--line);margin-bottom:18px}
+  .acct-card .who{font-family:'Fraunces',serif;font-size:1.25rem}
+  .acct-card .who span{display:block;font-family:'Inter',sans-serif;font-size:0.76rem;color:var(--brass);letter-spacing:0.03em;margin-top:2px}
+  .acct-card .bal{text-align:right}
+  .acct-card .bal .num{font-family:'Fraunces',serif;font-size:1.9rem}
+  .acct-card .bal .lbl{font-size:0.72rem;color:var(--ink-soft)}
+  .switch-link{background:none;border:none;color:var(--brass);cursor:pointer;font-size:0.85rem;text-decoration:underline;padding:0}
+  footer.note{text-align:center;color:var(--ink-soft);font-size:0.76rem;padding:20px 24px 40px;position:relative}
+  .api-flag{font-size:0.72rem;color:var(--ink-soft);text-align:center;padding-top:4px}
+
+  /* Hidden admin dot – subtle full stop trigger */
+  .admin-dot {
+    display: inline-block;
+    margin-left: 6px;
+    color: var(--ink-soft);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: default;
+    transition: color 0.2s;
+    user-select: none;
+    vertical-align: middle;
+  }
+  .admin-dot:hover {
+    color: var(--brass);
+  }
+
+  /* Back button styles */
+  .back-bar {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 18px;
+  }
+  .back-btn {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    background: transparent;
+    color: var(--navy);
+    border: 1px solid var(--line);
+    padding: 7px 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .back-btn:hover {
+    background: var(--paper);
+    border-color: var(--brass);
+  }
+  .back-btn::before {
+    content: "←";
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--brass);
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="brand">Ledger &amp; Vault<small>DEMO BANKING SYSTEM — PYTHON BACKEND</small></div>
+    <nav class="tabs" aria-hidden="true">
+      <button id="tab-customer" class="active">Customer</button>
+      <button id="tab-admin">Admin</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section id="view-customer" class="view active">
+    <div id="customer-login">
+      <h1 class="page-title">Access your account</h1>
+      <p class="page-sub">Enter the account ID your bank administrator gave you.</p>
+      <div class="panel">
+        <div class="field-row">
+          <div class="field">
+            <label for="login-id">Account ID</label>
+            <input id="login-id" type="text" placeholder="e.g. AC-1001">
+          </div>
+          <button class="action" id="btn-login">View account</button>
+        </div>
+        <div class="msg" id="login-msg"></div>
+      </div>
+    </div>
+
+    <div id="customer-dashboard" style="display:none">
+      <div class="back-bar">
+        <button class="back-btn" id="btn-back-login">Back to login</button>
+      </div>
+      <h1 class="page-title">Your account</h1>
+      <p class="page-sub">Move funds to any other account by ID.</p>
+      <div class="panel">
+        <div class="acct-card">
+          <div class="who" id="cust-name">— <span id="cust-id"></span></div>
+          <div class="bal"><div class="num" id="cust-balance">$0.00</div><div class="lbl">available balance</div></div>
+        </div>
+        <button class="switch-link" id="btn-logout">Switch account</button>
+      </div>
+
+      <div class="panel">
+        <h2>Send a transfer</h2>
+        <div class="field-row">
+          <div class="field"><label for="xfer-to">Recipient account ID</label><input id="xfer-to" type="text" placeholder="e.g. AC-1002"></div>
+          <div class="field"><label for="xfer-amt">Amount</label><input id="xfer-amt" type="number" min="0.01" step="0.01" placeholder="0.00"></div>
+          <div class="field"><label for="xfer-note">Note (optional)</label><input id="xfer-note" type="text" placeholder="What's this for?"></div>
+          <button class="action" id="btn-transfer">Send</button>
+        </div>
+        <div class="msg" id="xfer-msg"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Transaction history</h2>
+        <div class="table-scroll">
+          <table class="ledger">
+            <thead><tr><th>Date</th><th>Detail</th><th>Note</th><th style="text-align:right">Amount</th></tr></thead>
+            <tbody id="cust-history"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="view-admin" class="view">
+    <div class="back-bar">
+      <button class="back-btn" id="btn-back-admin">Back to customer</button>
+    </div>
+    <h1 class="page-title">Administration</h1>
+    <p class="page-sub">Create accounts and adjust balances.</p>
+
+    <div class="panel">
+      <h2>Open a new account</h2>
+      <div class="field-row">
+        <div class="field"><label for="new-name">Customer name</label><input id="new-name" type="text" placeholder="Full name"></div>
+        <div class="field"><label for="new-balance">Opening balance</label><input id="new-balance" type="number" min="0" step="0.01" placeholder="0.00"></div>
+        <button class="action" id="btn-create">Create account</button>
+      </div>
+      <div class="msg" id="create-msg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>All accounts</h2>
+      <div class="table-scroll">
+        <table class="ledger">
+          <thead><tr><th>Account ID</th><th>Name</th><th>Balance</th><th>Set balance</th><th></th></tr></thead>
+          <tbody id="admin-accounts"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>All transactions</h2>
+      <div class="table-scroll">
+        <table class="ledger">
+          <thead><tr><th>Date</th><th>From</th><th>To</th><th>Note</th><th style="text-align:right">Amount</th></tr></thead>
+          <tbody id="admin-transactions"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="note">
+  Demo application backed by a local Flask API. Data lives only in the server's memory and resets on restart.
+  <span id="admin-dot-trigger" class="admin-dot" title=".">.</span>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var currentAccountId = null;
+
+  function fmt(n){
+    var num = Number(n)||0;
+    return "$" + num.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function fmtDate(ts){
+    var d = new Date(ts*1000);
+    return d.toLocaleDateString(undefined,{month:'short',day:'numeric'}) + " · " + d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+  }
+  function showMsg(el, text, type){ el.textContent = text; el.className = "msg show" + (type?" "+type:""); }
+  function hideMsg(el){ el.className = "msg"; }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+  }
+
+  async function api(path, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({"Content-Type":"application/json"}, opts.headers||{});
+    var res = await fetch("/api" + path, opts);
+    var body = null;
+    try{ body = await res.json(); }catch(e){}
+    if(!res.ok){
+      var err = new Error((body && body.error) || "Request failed.");
+      throw err;
+    }
+    return body;
+  }
+
+  // ---------- Tab switching ----------
+  var tabCustomer = document.getElementById("tab-customer");
+  var tabAdmin = document.getElementById("tab-admin");
+  var viewCustomer = document.getElementById("view-customer");
+  var viewAdmin = document.getElementById("view-admin");
+
+  function setTab(which){
+    var isAdmin = which === "admin";
+    tabAdmin.classList.toggle("active", isAdmin);
+    tabCustomer.classList.toggle("active", !isAdmin);
+    viewAdmin.classList.toggle("active", isAdmin);
+    viewCustomer.classList.toggle("active", !isAdmin);
+    if(isAdmin) renderAdmin();
+  }
+
+  // Hidden admin dot trigger
+  document.getElementById("admin-dot-trigger").addEventListener("click", function(e){
+    e.preventDefault();
+    if (viewAdmin.classList.contains("active")) {
+      setTab("customer");
+    } else {
+      setTab("admin");
+    }
+  });
+
+  tabCustomer.addEventListener("click", function(){ setTab("customer"); });
+  tabAdmin.addEventListener("click", function(){ setTab("admin"); });
+
+  // ---------- Back buttons ----------
+  // Back from customer dashboard to login
+  document.getElementById("btn-back-login").addEventListener("click", function(){
+    currentAccountId = null;
+    document.getElementById("login-id").value = "";
+    document.getElementById("customer-login").style.display = "block";
+    document.getElementById("customer-dashboard").style.display = "none";
+    hideMsg(document.getElementById("login-msg"));
+  });
+
+  // Back from admin to customer view
+  document.getElementById("btn-back-admin").addEventListener("click", function(){
+    setTab("customer");
+  });
+
+  // ---------- Admin: create account ----------
+  var newName = document.getElementById("new-name");
+  var newBalance = document.getElementById("new-balance");
+  var createMsg = document.getElementById("create-msg");
+  var btnCreate = document.getElementById("btn-create");
+
+  btnCreate.addEventListener("click", async function(){
+    var name = newName.value.trim();
+    var bal = parseFloat(newBalance.value);
+    if(!name){ showMsg(createMsg, "Enter a customer name.", "error"); return; }
+    if(isNaN(bal) || bal < 0) bal = 0;
+    btnCreate.disabled = true;
+    try{
+      var acct = await api("/accounts", { method:"POST", body: JSON.stringify({ name: name, balance: bal }) });
+      newName.value = ""; newBalance.value = "";
+      showMsg(createMsg, "Account " + acct.id + " created for " + acct.name + ".", "success");
+      renderAdmin();
+    }catch(e){
+      showMsg(createMsg, e.message, "error");
+    }finally{ btnCreate.disabled = false; }
+  });
+
+  // ---------- Admin: render ----------
+  async function renderAdmin(){
+    var tbody = document.getElementById("admin-accounts");
+    var txBody = document.getElementById("admin-transactions");
+    var accountsList, txList;
+    try{
+      accountsList = await api("/accounts");
+      txList = await api("/transactions");
+    }catch(e){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Could not reach the server: '+escapeHtml(e.message)+'</td></tr>';
+      return;
+    }
+
+    if(accountsList.length === 0){
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="5">No accounts yet. Create one above.</td></tr>';
+    } else {
+      tbody.innerHTML = accountsList.map(function(a){
+        return '<tr>' +
+          '<td class="acct-id">'+a.id+'</td>' +
+          '<td>'+escapeHtml(a.name)+'</td>' +
+          '<td class="amt">'+fmt(a.balance)+'</td>' +
+          '<td><div class="balance-edit">' +
+            '<input type="number" step="0.01" data-set-id="'+a.id+'" placeholder="'+a.balance.toFixed(2)+'">' +
+            '<button class="action secondary" data-apply-id="'+a.id+'">Set</button>' +
+          '</div></td>' +
+          '<td><button class="action danger" data-delete-id="'+a.id+'">Remove</button></td>' +
+          '</tr>';
+      }).join("");
+    }
+
+    Array.prototype.forEach.call(tbody.querySelectorAll("[data-apply-id]"), function(btn){
+      btn.addEventListener("click", async function(){
+        var id = btn.getAttribute("data-apply-id");
+        var input = tbody.querySelector('[data-set-id="'+id+'"]');
+        var val = parseFloat(input.value);
+        if(isNaN(val) || val < 0){ input.value=""; input.placeholder="invalid"; return; }
+        try{
+          await api("/accounts/"+id+"/balance", { method:"PUT", body: JSON.stringify({ balance: val }) });
+          renderAdmin();
+          if(currentAccountId === id) renderCustomerDashboard();
+        }catch(e){ alert(e.message); }
+      });
+    });
+    Array.prototype.forEach.call(tbody.querySelectorAll("[data-delete-id]"), function(btn){
+      btn.addEventListener("click", async function(){
+        var id = btn.getAttribute("data-delete-id");
+        if(confirm("Remove account "+id+"? This cannot be undone.")){
+          try{ await api("/accounts/"+id, { method:"DELETE" }); renderAdmin(); }
+          catch(e){ alert(e.message); }
+        }
+      });
+    });
+
+    if(txList.length === 0){
+      txBody.innerHTML = '<tr class="empty-row"><td colspan="5">No transfers yet.</td></tr>';
+    } else {
+      txBody.innerHTML = txList.map(function(t){
+        return '<tr>' +
+          '<td>'+fmtDate(t.ts)+'</td>' +
+          '<td class="acct-id">'+t.from+'</td>' +
+          '<td class="acct-id">'+t.to+'</td>' +
+          '<td>'+escapeHtml(t.note||"—")+'</td>' +
+          '<td class="amt" style="text-align:right">'+fmt(t.amount)+'</td>' +
+          '</tr>';
+      }).join("");
+    }
+  }
+
+  // ---------- Customer: login ----------
+  var loginId = document.getElementById("login-id");
+  var loginMsg = document.getElementById("login-msg");
+  var btnLogin = document.getElementById("btn-login");
+
+  btnLogin.addEventListener("click", async function(){
+    var id = loginId.value.trim().toUpperCase();
+    if(!id){ showMsg(loginMsg, "Enter an account ID.", "error"); return; }
+    btnLogin.disabled = true;
+    try{
+      await api("/accounts/"+id);
+      currentAccountId = id;
+      hideMsg(loginMsg);
+      document.getElementById("customer-login").style.display = "none";
+      document.getElementById("customer-dashboard").style.display = "block";
+      renderCustomerDashboard();
+    }catch(e){
+      showMsg(loginMsg, e.message, "error");
+    }finally{ btnLogin.disabled = false; }
+  });
+  loginId.addEventListener("keydown", function(e){ if(e.key==="Enter") btnLogin.click(); });
+
+  document.getElementById("btn-logout").addEventListener("click", function(){
+    currentAccountId = null;
+    loginId.value = "";
+    document.getElementById("customer-login").style.display = "block";
+    document.getElementById("customer-dashboard").style.display = "none";
+  });
+
+  async function renderCustomerDashboard(){
+    if(!currentAccountId) return;
+    var a, rows;
+    try{
+      a = await api("/accounts/"+currentAccountId);
+      rows = await api("/accounts/"+currentAccountId+"/transactions");
+    }catch(e){
+      document.getElementById("btn-logout").click();
+      return;
+    }
+    document.getElementById("cust-name").childNodes[0].nodeValue = a.name + " ";
+    document.getElementById("cust-id").textContent = a.id;
+    document.getElementById("cust-balance").textContent = fmt(a.balance);
+
+    var hist = document.getElementById("cust-history");
+    if(rows.length === 0){
+      hist.innerHTML = '<tr class="empty-row"><td colspan="4">No transactions yet.</td></tr>';
+    } else {
+      hist.innerHTML = rows.map(function(t){
+        var out = t.from === currentAccountId;
+        var detail = out ? ("Sent to " + t.to) : ("Received from " + t.from);
+        var cls = out ? "neg" : "pos";
+        var sign = out ? "−" : "+";
+        return '<tr>' +
+          '<td>'+fmtDate(t.ts)+'</td>' +
+          '<td>'+detail+'</td>' +
+          '<td>'+escapeHtml(t.note||"—")+'</td>' +
+          '<td class="amt '+cls+'" style="text-align:right">'+sign+fmt(t.amount).slice(1)+'</td>' +
+          '</tr>';
+      }).join("");
+    }
+  }
+
+  // ---------- Customer: transfer ----------
+  var xferTo = document.getElementById("xfer-to");
+  var xferAmt = document.getElementById("xfer-amt");
+  var xferNote = document.getElementById("xfer-note");
+  var xferMsg = document.getElementById("xfer-msg");
+  var btnTransfer = document.getElementById("btn-transfer");
+
+  btnTransfer.addEventListener("click", async function(){
+    if(!currentAccountId) return;
+    var toId = xferTo.value.trim().toUpperCase();
+    var amount = parseFloat(xferAmt.value);
+    var note = xferNote.value.trim();
+    if(!toId){ showMsg(xferMsg, "Enter a recipient account ID.", "error"); return; }
+    if(isNaN(amount) || amount <= 0){ showMsg(xferMsg, "Enter a valid amount.", "error"); return; }
+
+    btnTransfer.disabled = true;
+    try{
+      var tx = await api("/transfer", { method:"POST", body: JSON.stringify({ from_id: currentAccountId, to_id: toId, amount: amount, note: note }) });
+      xferTo.value = ""; xferAmt.value = ""; xferNote.value = "";
+      showMsg(xferMsg, "Sent " + fmt(tx.amount) + " to " + tx.to + ".", "success");
+      renderCustomerDashboard();
+    }catch(e){
+      showMsg(xferMsg, e.message, "error");
+    }finally{ btnTransfer.disabled = false; }
+  });
+
+  // Initialize
+  setTab("customer");
+  renderAdmin();
+})();
+</script>
+
+</body>
+</html>
